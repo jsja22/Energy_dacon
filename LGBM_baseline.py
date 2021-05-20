@@ -9,24 +9,27 @@ from sklearn.metrics import mean_absolute_error
 
 from lightgbm import LGBMRegressor
 from sklearn.model_selection import KFold
-!pip install workalendar -q
 from workalendar.asia import SouthKorea
 
-train=pd.read_csv('energy/train.csv')
-test=pd.read_csv('energy/test.csv')
-submission=pd.read_csv('energy/sample_submission.csv')
+train=pd.read_csv('C:/data/energy_dacon/energy/train.csv',encoding='cp949')
+test=pd.read_csv('C:/data/energy_dacon/energy/test.csv',encoding='cp949')
+submission=pd.read_csv('C:/data/energy_dacon/energy/sample_submission.csv',encoding='cp949')
 
 train.columns = ['num', 'date_time', '전력사용량', '기온', '풍속', '습도', '강수량', '일조', '비전기냉방설비운영', '태양광보유']
 test.columns = ['num', 'date_time', '기온', '풍속', '습도', '강수량', '일조', '비전기냉방설비운영', '태양광보유']
 
 
 holidays = pd.Series(np.array(SouthKorea().holidays(2020))[:, 0])
+print(holidays) #총 15일
+#1.1, 1.24, 1.25, 1.26, 3.1, 4.30, 5.5, 6.6, 8.15, 9.30, 10.01, 10.02, 10.03, 10.09, 12.25
 
 #건물별로 '비전기냉방설비운영'과 '태양광보유'를 판단해 test set의 결측치를 보간해줍니다
 train[['num', '비전기냉방설비운영','태양광보유']]
 ice={}
 hot={}
 count=0
+print(len(train)) #122400 24시간씩 총 x 60개 건물 x 85일 ( 2020.06.01~2020.08.24)
+
 for i in range(0, len(train), len(train)//60):
     count +=1
     ice[count]=train.loc[i,'비전기냉방설비운영']
@@ -35,6 +38,10 @@ for i in range(0, len(train), len(train)//60):
 for i in range(len(test)):
     test.loc[i, '비전기냉방설비운영']=ice[test['num'][i]]
     test.loc[i, '태양광보유']=hot[test['num'][i]]
+
+print(ice)
+print(hot)
+print(test.head())
 
 #시간 변수와 요일 변수를 추가해봅니다.
 def time(x):
@@ -88,6 +95,13 @@ test['weekend']=test['weekday'].apply(lambda x :weekend(x))
 
 test.interpolate(method='values')
 
+print(test.head())
+print(train.head())
+train.to_csv('C:/data/energy_dacon/energy/train2.csv', index=False)
+test.to_csv('C:/data/energy_dacon/energy/test2.csv', index=False)
+
+
+"""
 train_x=train.drop('전력사용량', axis=1)
 train_y=train[['전력사용량']]
 
@@ -127,6 +141,7 @@ for i in range(5):
     submission['answer'] += models[i].predict(test)/5 
 
 #제출
-submission.to_csv('baseline_submission3.csv', index=False)
+submission.to_csv('C:/data/energy_dacon/energy/submission/baseline_submission1.csv', index=False)
 
 
+"""
