@@ -6,7 +6,8 @@ import os
 import matplotlib.pyplot as plt
 import datetime
 from sklearn.metrics import mean_absolute_error
-
+import xgboost as xgb
+from xgboost import plot_importance, plot_tree
 from lightgbm import LGBMRegressor
 from sklearn.model_selection import KFold
 from workalendar.asia import SouthKorea
@@ -95,13 +96,11 @@ test['weekend']=test['weekday'].apply(lambda x :weekend(x))
 
 test.interpolate(method='values')
 
-print(test.head())
-print(train.head())
-train.to_csv('C:/data/energy_dacon/energy/train2.csv', index=False)
-test.to_csv('C:/data/energy_dacon/energy/test2.csv', index=False)
+#print(test.head())
+#print(train.head())
+#train.to_csv('C:/data/energy_dacon/energy/train2.csv', index=False)
+#test.to_csv('C:/data/energy_dacon/energy/test2.csv', index=False)
 
-
-"""
 train_x=train.drop('전력사용량', axis=1)
 train_y=train[['전력사용량']]
 
@@ -131,17 +130,37 @@ for fold in range(5):
     X_valid=train_x.iloc[valid_idx, :]
     y_valid=train_y.iloc[valid_idx, :]
     
-    model=LGBMRegressor(n_estimators=5000, max_depth=10)
+    # model.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_valid, y_valid)], 
+    #          early_stopping_rounds=30, verbose=100, eval_metric='mae')
+    # models[fold]=model
+    model=xgb.XGBRegressor(n_estimators=4000,learning_rate=0.08,gamma=0, subsample=0.75, colsample_bytree=1,max_depth=7)
     model.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_valid, y_valid)], 
              early_stopping_rounds=30, verbose=100, eval_metric='mae')
     models[fold]=model
-    
     print(f'================================================\n\n')
 for i in range(5):
     submission['answer'] += models[i].predict(test)/5 
 
+
+#성능 평가
+from sklearn.metrics import mean_squared_error,r2_score
+y_pred =model.predict(X_train)
+mse_score = mean_squared_error(y_train,y_pred)
+r2_score =r2_score(y_train,y_pred)
+print('mse_score:', mse_score)
+print("r2_score:", r2_score)
+
+
+# n_estimator 500
+# mse_score: 26867.65741512175
+# r2_score: 0.9936302267322278
+
+#n_estimator 4000
+# mse_score: 2912.7804773489847
+# r2_score: 0.9993094391917822
+
+
 #제출
-submission.to_csv('C:/data/energy_dacon/energy/submission/baseline_submission1.csv', index=False)
+submission.to_csv('C:/data/energy_dacon/energy/submission/baseline_submission2.csv', index=False)
 
 
-"""
